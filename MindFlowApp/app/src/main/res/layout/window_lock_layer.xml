@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1A1A2E">
+
+    <!-- 主锁机界面 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp">
+
+        <!-- 锁机码 -->
+        <TextView
+            android:id="@+id/tv_session_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="锁机 e203f7a8e0"
+            android:textColor="#80FFFFFF"
+            android:textSize="14sp"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- 锁机原因 -->
+        <TextView
+            android:id="@+id/tv_reason"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="分心次数过多，需要冷却"
+            android:textColor="#B0FFFFFF"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- 倒计时 -->
+        <TextView
+            android:id="@+id/tv_timer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:60"
+            android:textColor="#FFFFFF"
+            android:textSize="72sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-light"/>
+
+        <!-- 剩余时间标签 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="剩余时间"
+            android:textColor="#80FFFFFF"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+
+        <!-- 进度条 -->
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+            android:layout_width="200dp"
+            android:layout_height="4dp"
+            android:layout_marginTop="24dp"
+            android:progressDrawable="@drawable/lock_progress_drawable"
+            android:progress="100"
+            android:max="100"/>
+
+        <!-- 白名单按钮 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="可打开应用"
+                android:textColor="#60FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginBottom="12dp"/>
+
+            <ImageView
+                android:id="@+id/btn_whitelist"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:src="@android:drawable/ic_menu_more"
+                android:background="@drawable/bg_circle_glass"
+                android:padding="14dp"
+                android:contentDescription="打开白名单"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 白名单抽屉容器 (默认隐藏) -->
+    <FrameLayout
+        android:id="@+id/fl_whitelist_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_whitelist"
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:layout_gravity="bottom"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="#FFFFFF">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <!-- 拖动条 -->
+                <View
+                    android:layout_width="40dp"
+                    android:layout_height="4dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_drag_handle"/>
+
+                <!-- 标题 -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="白名单应用"
+                    android:padding="16dp"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#000000"/>
+
+                <!-- 白名单应用列表 -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_whitelist_apps"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="8dp"
+                    android:clipToPadding="false"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </FrameLayout>
+
+</FrameLayout>

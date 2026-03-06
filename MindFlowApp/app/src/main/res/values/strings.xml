@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">MindFlow</string>
+    <string name="action_settings">设置</string>
+    
+    <!-- Navigation Titles -->
+    <string name="title_dashboard">主页</string>
+    <string name="title_session">专注</string>
+    <string name="title_report">报告</string>
+    <string name="title_settings">设置</string>
+    <string name="recent_activity_detail">阻断指数 %1$.2f · %2$s</string>
+    <string name="unknown_state">未知</string>
+    
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_description">MindFlow 需要此权限来监控您正在使用的应用，以便在您分心时提醒您回到工作状态。我们不会收集或上传任何个人数据。</string>
+    
+    <!-- Focus Session -->
+    <string name="focus_status_idle">准备开始专注</string>
+    <string name="focus_status_focusing">专注中</string>
+    <string name="focus_status_paused">已暂停</string>
+    <string name="focus_status_resting">休息中</string>
+    <string name="btn_start_focus">开始专注</string>
+    <string name="btn_pause_focus">暂停</string>
+    <string name="btn_resume_focus">继续</string>
+    <string name="btn_stop_focus">结束</string>
+    
+    <!-- Warnings -->
+    <string name="warning_distraction">检测到分心，请回到工作状态</string>
+    <string name="warning_lock">分心次数过多，应用已锁定</string>
+</resources>

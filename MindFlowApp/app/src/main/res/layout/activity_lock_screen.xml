@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF1A1A2E"
+    android:fitsSystemWindows="false">
+
+    <!-- 顶部区域：锁机原因 -->
+    <TextView
+        android:id="@+id/tvReason"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="80dp"
+        android:text="专注模式已开启"
+        android:textColor="#FFFFFFFF"
+        android:textSize="18sp" />
+
+    <!-- 中心区域：倒计时 -->
+    <LinearLayout
+        android:id="@+id/llCenter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00"
+            android:textColor="#FFFFFFFF"
+            android:textSize="72sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-light" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="240dp"
+            android:layout_height="8dp"
+            android:layout_marginTop="24dp"
+            android:max="100"
+            android:progress="100"
+            android:progressDrawable="@android:drawable/progress_horizontal" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="剩余时间"
+            android:textColor="#99FFFFFF"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+
+    <!-- 底部区域：白名单应用 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="60dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="可使用的应用"
+            android:textColor="#99FFFFFF"
+            android:textSize="12sp" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/llWhitelistApps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp" />
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+</RelativeLayout>

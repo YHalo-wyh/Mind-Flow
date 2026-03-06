@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.mindflow">
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- 忽略电池优化，保持后台运行 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- 开机自启动 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- 读取运行中的应用/进程（旧版Android） -->
+    <uses-permission android:name="android.permission.GET_TASKS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.REAL_GET_TASKS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- 禁用锁屏（部分设备需要） -->
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+
+    <!-- 唤醒屏幕 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Android 11+ 需要此权限才能查询所有已安装应用 -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- 声明需要查询的应用类型，用于获取所有已安装应用列表 -->
+    <queries>
+        <!-- 查询所有带有LAUNCHER的应用 -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- 查询所有可被视图打开的应用 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent>
+        <!-- 查询所有可被发送的应用 -->
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <!-- 常见社交/娱乐应用包名（确保可见性） -->
+        <package android:name="com.tencent.mm" />
+        <package android:name="com.tencent.mobileqq" />
+        <package android:name="com.tencent.tim" />
+        <package android:name="com.sina.weibo" />
+        <package android:name="com.ss.android.ugc.aweme" />
+        <package android:name="com.ss.android.ugc.aweme.lite" />
+        <package android:name="com.ss.android.article.news" />
+        <package android:name="com.ss.android.article.lite" />
+        <package android:name="com.kuaishou.nebula" />
+        <package android:name="com.smile.gifmaker" />
+        <package android:name="tv.danmaku.bili" />
+        <package android:name="com.bilibili.app.in" />
+        <package android:name="com.netease.cloudmusic" />
+        <package android:name="com.kugou.android" />
+        <package android:name="com.tencent.qqmusic" />
+        <package android:name="com.taobao.taobao" />
+        <package android:name="com.jingdong.app.mall" />
+        <package android:name="com.xingin.xhs" />
+        <package android:name="com.zhihu.android" />
+        <package android:name="com.douban.frodo" />
+        <package android:name="com.alibaba.android.rimet" />
+        <package android:name="com.tencent.wework" />
+        <!-- 游戏 -->
+        <package android:name="com.tencent.tmgp.sgame" />
+        <package android:name="com.tencent.ig" />
+        <package android:name="com.miHoYo.Yuanshen" />
+        <package android:name="com.miHoYo.hkrpg" />
+        <package android:name="com.netease.onmyoji.mi" />
+        <!-- 视频 -->
+        <package android:name="com.youku.phone" />
+        <package android:name="com.qiyi.video" />
+        <package android:name="com.tencent.qqlive" />
+        <package android:name="com.hunantv.imgo.activity" />
+        <package android:name="com.duowan.kiwi" />
+        <!-- 工具/办公 -->
+        <package android:name="com.microsoft.office.word" />
+        <package android:name="com.microsoft.office.excel" />
+        <package android:name="com.microsoft.office.powerpoint" />
+        <package android:name="com.google.android.apps.docs" />
+        <package android:name="cn.wps.moffice_eng" />
+        <package android:name="com.kingsoft.email" />
+        <package android:name="com.youdao.dict" />
+        <package android:name="com.baidu.netdisk" />
+        <package android:name="com.xunlei.downloadprovider" />
+        <!-- 浏览器 -->
+        <package android:name="com.android.chrome" />
+        <package android:name="com.UCMobile" />
+        <package android:name="com.qihoo.browser" />
+        <package android:name="com.baidu.browser.apps" />
+        <package android:name="com.tencent.mtt" />
+        <!-- 地图/出行 -->
+        <package android:name="com.autonavi.minimap" />
+        <package android:name="com.baidu.BaiduMap" />
+        <package android:name="com.sdu.didi.psnger" />
+        <package android:name="com.eg.android.AlipayGphone" />
+        <!-- 外卖/生活 -->
+        <package android:name="com.sankuai.meituan" />
+        <package android:name="me.ele" />
+        <package android:name="com.dianping.v1" />
+        <!-- 学习 -->
+        <package android:name="com.fenbi.android.servant" />
+        <package android:name="com.xueersi.parentsmeeting" />
+        <package android:name="com.baidu.homework" />
+        <package android:name="com.chaoxing.mobile" />
+        <!-- 相机/图片 -->
+        <package android:name="com.meitu.meiyancamera" />
+        <package android:name="us.zoom.videomeetings" />
+        <package android:name="com.tencent.meeting" />
+    </queries>
+
+    <application
+        android:usesCleartextTraffic="true"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MindFlow">
+
+        <!-- 首次启动权限引导页（由 MainActivity 按需跳转，不作为启动入口） -->
+        <activity
+            android:name=".ui.setup.PermissionSetupActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MindFlow" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MindFlow">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.lock.WhitelistActivity"
+            android:label="管理白名单"
+            android:theme="@style/Theme.MindFlow.Fullscreen"
+            android:exported="false" />
+
+        <!-- 锁机界面 Activity（全屏，像来电一样） -->
+        <activity
+            android:name=".ui.lock.LockScreenActivity"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.MindFlow.Fullscreen"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.warning.WarningDialogActivity"
+            android:theme="@style/Theme.MindFlow.Dialog"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:exported="false" />
+
+        <service
+            android:name=".service.ScreenCaptureService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <service
+            android:name=".service.FocusService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <!-- 悬浮窗锁机服务 - 番茄ToDo级别实现 -->
+        <service
+            android:name=".service.LockWindowService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
+        <service
+            android:name=".service.AppMonitorService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- 设备管理器 - 提高锁机强制性 -->
+        <receiver
+            android:name=".receiver.MindFlowDeviceAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="false">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 开机自启动接收器 - 用于恢复锁机状态 -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

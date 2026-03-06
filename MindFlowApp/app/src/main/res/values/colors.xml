@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- MindFlow Theme Colors -->
+    <color name="primary">#6366F1</color>
+    <color name="primary_variant">#4F46E5</color>
+    <color name="secondary">#10B981</color>
+    <color name="secondary_variant">#059669</color>
+    <color name="accent">#F59E0B</color>
+    
+    <!-- Background Colors -->
+    <color name="background_primary">#1A1A2E</color>
+    <color name="background_secondary">#16213E</color>
+    <color name="card_background">#232A4A</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#CCFFFFFF</color>
+    <color name="text_hint">#99FFFFFF</color>
+    
+    <!-- Status Colors -->
+    <color name="success">#22C55E</color>
+    <color name="warning">#F59E0B</color>
+    <color name="warning_color">#FF6B00</color>
+    <color name="error">#EF4444</color>
+    <color name="info">#3B82F6</color>
+    
+    <!-- Sensor Data Colors -->
+    <color name="heart_rate">#EF4444</color>
+    <color name="steps">#10B981</color>
+    <color name="location">#6366F1</color>
+    
+    <!-- Cognitive State Colors -->
+    <color name="state_deep_focus">#6366F1</color>
+    <color name="state_light_focus">#8B5CF6</color>
+    <color name="state_leisure">#F59E0B</color>
+    <color name="state_high_stress">#EF4444</color>
+    <color name="state_relaxed">#10B981</color>
+</resources>
