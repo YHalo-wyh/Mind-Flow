@@ -150,7 +150,7 @@
             android:theme="@style/Theme.MindFlow" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.splash.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.MindFlow">
             <intent-filter>
@@ -159,9 +159,37 @@
             </intent-filter>
         </activity>
 
+        <!-- 登录界面 -->
+        <activity
+            android:name=".ui.auth.LoginActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MindFlow">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="mindflow"
+                    android:host="auth-callback"
+                    android:pathPrefix="/reset-password" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MindFlow">
+        </activity>
+
         <activity
             android:name=".ui.lock.WhitelistActivity"
             android:label="管理白名单"
+            android:theme="@style/Theme.MindFlow.Fullscreen"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.settings.NotificationSourcesActivity"
+            android:label="通知来源管理"
             android:theme="@style/Theme.MindFlow.Fullscreen"
             android:exported="false" />
 
@@ -213,6 +241,16 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <service
+            android:name=".service.FocusNotificationListenerService"
+            android:label="MindFlow 通知过滤"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
         </service>
 
         <!-- 设备管理器 - 提高锁机强制性 -->

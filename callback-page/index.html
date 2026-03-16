@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MindFlow 重设密码回调</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+      color: #e5e7eb;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    h1 { font-size: 20px; margin: 0 0 10px; }
+    p { margin: 8px 0; line-height: 1.6; color: #cbd5e1; }
+    .ok { color: #22c55e; }
+    .err { color: #f87171; }
+    .row { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      background: #10b981;
+      color: #052e16;
+      font-weight: 700;
+    }
+    .ghost {
+      background: transparent;
+      color: #93c5fd;
+      border: 1px solid #334155;
+    }
+    code {
+      display: block;
+      margin-top: 12px;
+      background: #0b1220;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      color: #93c5fd;
+      word-break: break-all;
+      white-space: pre-wrap;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>MindFlow 重设密码回调</h1>
+    <p id="status">正在解析重设密码结果...</p>
+    <div class="row">
+      <button id="openAppBtn" type="button">返回 App 设置新密码</button>
+      <button id="copyBtn" class="ghost" type="button">复制回调参数</button>
+    </div>
+    <code id="payload"></code>
+    <p>仅在密码找回（recovery）时会自动回跳。</p>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const payloadEl = document.getElementById("payload");
+    const openAppBtn = document.getElementById("openAppBtn");
+    const copyBtn = document.getElementById("copyBtn");
+
+    const rawHash = window.location.hash || "";
+    const hash = rawHash.startsWith("#") ? rawHash.slice(1) : rawHash;
+    const params = new URLSearchParams(hash);
+
+    const error = params.get("error") || "";
+    const errorDesc = params.get("error_description") || "";
+    const accessToken = params.get("access_token") || "";
+    const type = (params.get("type") || "").toLowerCase();
+
+    const deepLink = "mindflow://auth-callback/reset-password" + (rawHash || "");
+
+    if (error) {
+      statusEl.className = "err";
+      statusEl.textContent = "回调失败：" + error + (errorDesc ? " (" + decodeURIComponent(errorDesc) + ")" : "");
+    } else if (type === "recovery" && accessToken) {
+      statusEl.className = "ok";
+      statusEl.textContent = "验证通过，正在返回 App 设置新密码...";
+      setTimeout(() => { window.location.href = deepLink; }, 600);
+    } else {
+      statusEl.textContent = "这不是重设密码回调，不会自动跳转。";
+    }
+
+    payloadEl.textContent = hash || "(空)";
+
+    openAppBtn.addEventListener("click", () => {
+      window.location.href = deepLink;
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(hash || "");
+        copyBtn.textContent = "已复制";
+        setTimeout(() => copyBtn.textContent = "复制回调参数", 1200);
+      } catch (_) {
+        copyBtn.textContent = "复制失败";
+      }
+    });
+  </script>
+</body>
+</html>
