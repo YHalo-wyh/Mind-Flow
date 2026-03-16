@@ -232,7 +232,7 @@ public class SupabaseClient {
         validateConfig();
 
         String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8.name());
-        String url = supabaseUrl + "/rest/v1/user_profiles?email=eq." + encodedEmail + "&select=id&limit=1";
+        String url = supabaseUrl + "/rest/v1/user_profiles?email=eq." + encodedEmail + "&select=id,email&limit=1";
 
         Request request = new Request.Builder()
                 .url(url)
@@ -247,7 +247,25 @@ public class SupabaseClient {
 
             if (response.isSuccessful()) {
                 JSONArray arr = new JSONArray(responseBody);
-                return arr.length() > 0 ? UserExistence.EXISTS : UserExistence.NOT_EXISTS;
+                if (arr.length() <= 0) {
+                    return UserExistence.NOT_EXISTS;
+                }
+
+                JSONObject first = arr.optJSONObject(0);
+                if (first == null) {
+                    return UserExistence.NOT_EXISTS;
+                }
+
+                String id = first.optString("id", "").trim();
+                String returnedEmail = first.optString("email", "").trim();
+                if (id.isEmpty()) {
+                    return UserExistence.NOT_EXISTS;
+                }
+                if (!returnedEmail.isEmpty() && !returnedEmail.equalsIgnoreCase(email)) {
+                    return UserExistence.NOT_EXISTS;
+                }
+
+                return UserExistence.EXISTS;
             }
 
             // 无法查询时返回 UNKNOWN，由上层决定是否阻断。

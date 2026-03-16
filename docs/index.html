@@ -336,7 +336,7 @@
 
       statusEl.textContent = "正在校验用户...";
       const verifyResp = await fetch(
-        SUPABASE_URL + "/rest/v1/user_profiles?email=eq." + encodeURIComponent(email) + "&select=id&limit=1",
+        SUPABASE_URL + "/rest/v1/user_profiles?email=eq." + encodeURIComponent(email) + "&select=id,email&limit=1",
         {
           method: "GET",
           headers: {
@@ -362,7 +362,16 @@
 
       if (!Array.isArray(verifyRows) || verifyRows.length === 0) {
         statusEl.className = "err";
-        statusEl.textContent = "该用户不存在，请先注册。";
+        statusEl.textContent = "该账户不存在，请先注册。";
+        return;
+      }
+
+      const first = verifyRows[0] || {};
+      const verifyId = String(first.id || "").trim();
+      const verifyEmail = String(first.email || "").trim();
+      if (!verifyId || (verifyEmail && verifyEmail.toLowerCase() !== email.toLowerCase())) {
+        statusEl.className = "err";
+        statusEl.textContent = "该账户不存在，请先注册。";
         return;
       }
 

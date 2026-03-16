@@ -115,10 +115,12 @@ public class LoginActivity extends AppCompatActivity {
     private void updateForceLoginUi() {
         if (forceLoginMode) {
             binding.tvLoginHint.setText("请先登录，登录后可同步云端数据");
+            binding.btnOfflineMode.setVisibility(View.GONE);
             binding.tvSkipLogin.setVisibility(View.GONE);
         } else {
             binding.tvLoginHint.setText("登录后可同步专注数据，离线模式也可直接使用");
-            binding.tvSkipLogin.setVisibility(View.VISIBLE);
+            binding.btnOfflineMode.setVisibility(View.VISIBLE);
+            binding.tvSkipLogin.setVisibility(View.GONE);
         }
     }
 
@@ -282,13 +284,6 @@ public class LoginActivity extends AppCompatActivity {
         // 忘记密码
         binding.tvForgotPassword.setOnClickListener(v -> handleForgotPassword());
         
-        // 跳过登录
-        binding.tvSkipLogin.setOnClickListener(v -> {
-            // 进入离线模式
-            AuthManager.getInstance(LoginActivity.this).setOfflineMode(true);
-            navigateToMain();
-        });
-
         binding.btnOfflineMode.setOnClickListener(v -> {
             AuthManager.getInstance(LoginActivity.this).setOfflineMode(true);
             navigateToMain();
