@@ -337,7 +337,8 @@ public class DistractionManager {
         }
 
         if (assessment.status == DecisionStatus.DISTRACTED && isInterventionExempt) {
-            lastAiFocused = false;
+            // 允许使用应用命中偏离目标时仅记录日志，不在UI上标记为“分心”以免误解为会计分。
+            lastAiFocused = true;
             consecutiveDistractedSignals = 0;
             distractionEvidence = Math.max(0, distractionEvidence - UNSURE_RECOVERY);
             logAiRecognition(aiVision + " [允许使用应用，仅记录偏离目标不干预]", false);
@@ -358,6 +359,9 @@ public class DistractionManager {
         distractionEvidence = clamp(distractionEvidence + evidenceDelta, 0, 100);
         lastAiFocused = false;
 
+        boolean directDistractedHit = assessment.status == DecisionStatus.DISTRACTED
+            && (assessment.confidence >= MEDIUM_CONFIDENCE_THRESHOLD
+            || (isDistractedByApp && assessment.confidence >= LOW_CONFIDENCE_THRESHOLD));
         boolean strongDistracted = assessment.status == DecisionStatus.DISTRACTED
                 && assessment.confidence >= HIGH_CONFIDENCE_THRESHOLD;
         boolean repeatedMediumDistracted = assessment.status == DecisionStatus.DISTRACTED
@@ -369,7 +373,7 @@ public class DistractionManager {
                 + ", appSignal=" + isDistractedByApp + ", consecutive=" + consecutiveDistractedSignals
                 + ", evidence=" + distractionEvidence);
 
-        if (!strongDistracted && !repeatedMediumDistracted && !evidenceEnough) {
+        if (!directDistractedHit && !strongDistracted && !repeatedMediumDistracted && !evidenceEnough) {
             logAiRecognition(aiVision + " [证据累计中]", false);
             return false;
         }
@@ -415,8 +419,10 @@ public class DistractionManager {
                 assessment.reason = reason.isEmpty() ? "未提供理由" : reason;
                 assessment.confidence = confidence;
 
-                boolean reasonSaysDistracted = containsAnyIgnoreCase(reason, "不符合", "偏离目标", "无关", "娱乐", "购物");
-                boolean reasonSaysFocused = containsAnyIgnoreCase(reason, "符合目标", "相关", "正在进行", "学习", "工作");
+                boolean reasonSaysDistracted = containsAnyIgnoreCase(reason,
+                    "不符合", "偏离目标", "无关", "与目标无关", "娱乐", "购物", "刷视频", "闲聊");
+                boolean reasonSaysFocused = containsAnyIgnoreCase(reason,
+                    "符合目标", "与目标一致", "高度相关", "正在执行任务", "与当前任务匹配");
                 if ((assessment.status == DecisionStatus.FOCUSED && reasonSaysDistracted)
                         || (assessment.status == DecisionStatus.DISTRACTED && reasonSaysFocused)) {
                     Log.w(TAG, "AI JSON结论与原因矛盾，降级为不确定: " + jsonPayload);
