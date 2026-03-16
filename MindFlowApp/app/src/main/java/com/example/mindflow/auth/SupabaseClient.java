@@ -6,8 +6,11 @@ import android.util.Log;
 import com.example.mindflow.BuildConfig;
 
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
@@ -213,6 +216,42 @@ public class SupabaseClient {
         
         try (Response response = client.newCall(request).execute()) {
             return response.isSuccessful();
+        }
+    }
+
+    public enum UserExistence {
+        EXISTS,
+        NOT_EXISTS,
+        UNKNOWN
+    }
+
+    /**
+     * 根据邮箱检查用户是否存在（依赖 user_profiles 可查询）。
+     */
+    public UserExistence checkUserExistsByEmail(String email) throws Exception {
+        validateConfig();
+
+        String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8.name());
+        String url = supabaseUrl + "/rest/v1/user_profiles?email=eq." + encodedEmail + "&select=id&limit=1";
+
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader("apikey", supabaseKey)
+                .addHeader("Content-Type", "application/json")
+                .get()
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            String responseBody = response.body() != null ? response.body().string() : "";
+            Log.d(TAG, "Check user exists response: " + response.code() + " - " + responseBody);
+
+            if (response.isSuccessful()) {
+                JSONArray arr = new JSONArray(responseBody);
+                return arr.length() > 0 ? UserExistence.EXISTS : UserExistence.NOT_EXISTS;
+            }
+
+            // 无法查询时返回 UNKNOWN，由上层决定是否阻断。
+            return UserExistence.UNKNOWN;
         }
     }
 

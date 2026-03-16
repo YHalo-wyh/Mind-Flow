@@ -334,6 +334,38 @@
         return;
       }
 
+      statusEl.textContent = "正在校验用户...";
+      const verifyResp = await fetch(
+        SUPABASE_URL + "/rest/v1/user_profiles?email=eq." + encodeURIComponent(email) + "&select=id&limit=1",
+        {
+          method: "GET",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      if (!verifyResp.ok) {
+        statusEl.className = "err";
+        statusEl.textContent = "暂时无法验证用户是否存在，请稍后再试。";
+        return;
+      }
+
+      const verifyText = await verifyResp.text();
+      let verifyRows = [];
+      try {
+        verifyRows = JSON.parse(verifyText || "[]");
+      } catch (_) {
+        verifyRows = [];
+      }
+
+      if (!Array.isArray(verifyRows) || verifyRows.length === 0) {
+        statusEl.className = "err";
+        statusEl.textContent = "该用户不存在，请先注册。";
+        return;
+      }
+
       statusEl.textContent = "正在发送重置邮件...";
       const resp = await fetch(SUPABASE_URL + "/auth/v1/recover", {
         method: "POST",
