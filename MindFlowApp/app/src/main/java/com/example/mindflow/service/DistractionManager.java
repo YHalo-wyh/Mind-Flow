@@ -287,6 +287,9 @@ public class DistractionManager {
         final int unsureRecovery = getUnsureRecovery();
         final long warningCooldownMs = getWarningCooldownMs();
         final long distractionDebounceMs = getDistractionDebounceMs();
+        final int sensitivity = getSensitivity();
+        final boolean ultraStrictMode = sensitivity >= 80;
+        final boolean extremeStrictMode = sensitivity >= 90;
 
         // 监控未启用时跳过（停止专注后）
         if (!isMonitoringEnabled) {
@@ -327,7 +330,7 @@ public class DistractionManager {
             return false;
         }
 
-        if (assessment.status == DecisionStatus.UNSURE && !isDistractedByApp) {
+        if (assessment.status == DecisionStatus.UNSURE && !isDistractedByApp && !extremeStrictMode) {
             lastAiFocused = true;
             consecutiveDistractedSignals = 0;
             distractionEvidence = Math.max(0, distractionEvidence - unsureRecovery);
@@ -338,7 +341,8 @@ public class DistractionManager {
 
         if (assessment.status == DecisionStatus.DISTRACTED
                 && assessment.confidence < lowConfidenceThreshold
-                && !isDistractedByApp) {
+                && !isDistractedByApp
+                && !ultraStrictMode) {
             lastAiFocused = true;
             consecutiveDistractedSignals = 0;
             distractionEvidence = Math.max(0, distractionEvidence - unsureRecovery);
@@ -357,7 +361,10 @@ public class DistractionManager {
             return false;
         }
 
-        if (assessment.status == DecisionStatus.DISTRACTED) {
+        boolean nonFocusedSignal = assessment.status == DecisionStatus.DISTRACTED
+                || (extremeStrictMode && assessment.status == DecisionStatus.UNSURE);
+
+        if (nonFocusedSignal) {
             consecutiveDistractedSignals++;
         } else {
             consecutiveDistractedSignals = 0;
@@ -370,17 +377,17 @@ public class DistractionManager {
         distractionEvidence = clamp(distractionEvidence + evidenceDelta, 0, 100);
         lastAiFocused = false;
 
-        boolean ultraStrictMode = getSensitivity() >= 80;
-        boolean directDistractedHit = assessment.status == DecisionStatus.DISTRACTED
+        boolean directDistractedHit = nonFocusedSignal
             && (assessment.confidence >= mediumConfidenceThreshold
             || (isDistractedByApp && assessment.confidence >= lowConfidenceThreshold)
-            || (ultraStrictMode && (isDistractedByApp || assessment.confidence >= 35)));
+            || (ultraStrictMode && (isDistractedByApp || assessment.confidence >= 35))
+            || extremeStrictMode);
         boolean strongDistracted = assessment.status == DecisionStatus.DISTRACTED
                 && assessment.confidence >= highConfidenceThreshold;
         boolean repeatedMediumDistracted = assessment.status == DecisionStatus.DISTRACTED
                 && assessment.confidence >= mediumConfidenceThreshold
                 && consecutiveDistractedSignals >= 2;
-            boolean evidenceEnough = distractionEvidence >= distractionTriggerEvidence;
+        boolean evidenceEnough = distractionEvidence >= distractionTriggerEvidence;
 
         Log.d(TAG, "分心证据: status=" + assessment.status + ", confidence=" + assessment.confidence
                 + ", appSignal=" + isDistractedByApp + ", consecutive=" + consecutiveDistractedSignals
@@ -948,12 +955,12 @@ public class DistractionManager {
 
     private long getWarningCooldownMs() {
         double r = getSensitivityRatio();
-        return (long) Math.round(12000 - 10500 * r); // 宽松12s -> 严格1.5s
+        return (long) Math.round(12000 - 11200 * r); // 宽松12s -> 严格0.8s
     }
 
     private long getDistractionDebounceMs() {
         double r = getSensitivityRatio();
-        return (long) Math.round(18000 - 16500 * r); // 宽松18s -> 严格1.5s
+        return (long) Math.round(18000 - 17500 * r); // 宽松18s -> 严格0.5s
     }
 
     private DecisionStatus parseConclusion(String conclusion, String reason) {

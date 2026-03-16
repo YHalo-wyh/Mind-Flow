@@ -161,15 +161,10 @@
       return "";
     }
 
-    const SUPABASE_URL = resolveSupabaseUrl();
-    const SUPABASE_ANON_KEY = window.MF_SUPABASE_ANON_KEY || "";
+    const SUPABASE_URL = resolveSupabaseUrl() || "https://hbycbtlboclqhkqznsea.supabase.co";
+    const SUPABASE_ANON_KEY = window.MF_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhieWNidGxib2NscWhrcXpuc2VhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTMwNzQsImV4cCI6MjA4OTIyOTA3NH0.OBTy__XH3tlc9xgL5mzYRDdwjYkXqIl-WTzqaNnFEyA";
 
     function ensureConfig() {
-      if (!SUPABASE_URL) {
-        statusEl.className = "err";
-        statusEl.textContent = "缺少 Supabase URL。请在 URL 里带 sb 参数，或在页面注入 MF_SUPABASE_URL。";
-        return false;
-      }
       if (!SUPABASE_ANON_KEY) {
         statusEl.className = "err";
         statusEl.textContent = "缺少 Supabase anon key。请在页面注入 window.MF_SUPABASE_ANON_KEY。";
