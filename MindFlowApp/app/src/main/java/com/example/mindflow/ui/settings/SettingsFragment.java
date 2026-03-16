@@ -204,8 +204,14 @@ public class SettingsFragment extends Fragment {
                 .setMessage("确定要退出登录吗？本地数据将保留。")
                 .setPositiveButton("退出", (dialog, which) -> {
                     authManager.logout();
+                    authManager.setOfflineMode(false);
                     updateUserInfo();
                     Toast.makeText(requireContext(), "已退出登录", Toast.LENGTH_SHORT).show();
+
+                    Intent intent = new Intent(requireContext(), LoginActivity.class);
+                    intent.putExtra(LoginActivity.EXTRA_FORCE_LOGIN, true);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
                 })
                 .setNegativeButton("取消", null)
                 .show();
