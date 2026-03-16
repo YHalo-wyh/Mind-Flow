@@ -116,11 +116,9 @@ public class LoginActivity extends AppCompatActivity {
         if (forceLoginMode) {
             binding.tvLoginHint.setText("请先登录，登录后可同步云端数据");
             binding.btnOfflineMode.setVisibility(View.GONE);
-            binding.tvSkipLogin.setVisibility(View.GONE);
         } else {
             binding.tvLoginHint.setText("登录后可同步专注数据，离线模式也可直接使用");
             binding.btnOfflineMode.setVisibility(View.VISIBLE);
-            binding.tvSkipLogin.setVisibility(View.GONE);
         }
     }
 
@@ -160,7 +158,7 @@ public class LoginActivity extends AppCompatActivity {
         recoveryAccessToken = token;
 
         binding.tvLoginHint.setText("请设置新密码，设置成功后再登录");
-        binding.tvSkipLogin.setVisibility(View.GONE);
+        binding.btnOfflineMode.setVisibility(View.GONE);
         showResetPasswordDialog();
     }
 
