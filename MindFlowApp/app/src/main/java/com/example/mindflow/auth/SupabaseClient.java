@@ -6,8 +6,11 @@ import android.util.Log;
 import com.example.mindflow.BuildConfig;
 
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
@@ -23,6 +26,8 @@ import okhttp3.Response;
 public class SupabaseClient {
     private static final String TAG = "SupabaseClient";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    private static final String RECOVERY_REDIRECT_TO = "mindflow://auth-callback/reset-password";
+    private static final String RECOVERY_TRACE_SOURCE = "android_app";
     
     private final String supabaseUrl;
     private final String supabaseKey;
@@ -203,6 +208,9 @@ public class SupabaseClient {
 
         JSONObject body = new JSONObject();
         body.put("email", email);
+        String redirectWithTrace = buildRecoveryRedirectWithTrace(RECOVERY_REDIRECT_TO, RECOVERY_TRACE_SOURCE);
+        body.put("redirect_to", redirectWithTrace);
+        Log.d(TAG, "resetPassword redirect_to=" + redirectWithTrace);
         
         Request request = new Request.Builder()
                 .url(supabaseUrl + "/auth/v1/recover")
@@ -214,6 +222,122 @@ public class SupabaseClient {
         try (Response response = client.newCall(request).execute()) {
             return response.isSuccessful();
         }
+    }
+
+    private String buildRecoveryRedirectWithTrace(String baseRedirect, String source) {
+        String safeBase = (baseRedirect == null) ? "" : baseRedirect.trim();
+        if (safeBase.isEmpty()) {
+            return safeBase;
+        }
+
+        String separator = safeBase.contains("?") ? "&" : "?";
+        String ts = String.valueOf(System.currentTimeMillis());
+        String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
+        return safeBase + separator + "mf_src=" + encodedSource + "&mf_ts=" + ts;
+    }
+
+    public enum UserExistence {
+        EXISTS,
+        NOT_EXISTS,
+        UNKNOWN
+    }
+
+    /**
+     * 根据邮箱检查用户是否存在（依赖 user_profiles 可查询）。
+     */
+    public UserExistence checkUserExistsByEmail(String email) throws Exception {
+        validateConfig();
+
+        UserExistence rpcResult = checkUserExistsByEmailRpc(email);
+        if (rpcResult != UserExistence.UNKNOWN) {
+            return rpcResult;
+        }
+
+        String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8.name());
+        String url = supabaseUrl + "/rest/v1/user_profiles?email=eq." + encodedEmail + "&select=id,email&limit=1";
+
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader("apikey", supabaseKey)
+                .addHeader("Content-Type", "application/json")
+                .get()
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            String responseBody = response.body() != null ? response.body().string() : "";
+            Log.d(TAG, "Check user exists response: " + response.code() + " - " + responseBody);
+
+            if (response.isSuccessful()) {
+                JSONArray arr = new JSONArray(responseBody);
+                if (arr.length() <= 0) {
+                    // user_profiles 可能缺历史数据，不能据此断言 auth.users 不存在。
+                    return UserExistence.UNKNOWN;
+                }
+
+                JSONObject first = arr.optJSONObject(0);
+                if (first == null) {
+                    return UserExistence.UNKNOWN;
+                }
+
+                String id = first.optString("id", "").trim();
+                String returnedEmail = first.optString("email", "").trim();
+                if (id.isEmpty()) {
+                    return UserExistence.UNKNOWN;
+                }
+                if (!returnedEmail.isEmpty() && !returnedEmail.equalsIgnoreCase(email)) {
+                    return UserExistence.NOT_EXISTS;
+                }
+
+                return UserExistence.EXISTS;
+            }
+
+            // 无法查询时返回 UNKNOWN，由上层决定是否阻断。
+            return UserExistence.UNKNOWN;
+        }
+    }
+
+    private UserExistence checkUserExistsByEmailRpc(String email) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("p_email", email);
+
+            Request request = new Request.Builder()
+                    .url(supabaseUrl + "/rest/v1/rpc/email_exists")
+                    .addHeader("apikey", supabaseKey)
+                    .addHeader("Content-Type", "application/json")
+                    .post(RequestBody.create(body.toString(), JSON))
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                String responseBody = response.body() != null ? response.body().string() : "";
+                Log.d(TAG, "RPC email_exists response: " + response.code() + " - " + responseBody);
+                if (!response.isSuccessful()) {
+                    return UserExistence.UNKNOWN;
+                }
+
+                String normalized = responseBody == null ? "" : responseBody.trim();
+                if ("true".equalsIgnoreCase(normalized)) {
+                    return UserExistence.EXISTS;
+                }
+                if ("false".equalsIgnoreCase(normalized)) {
+                    return UserExistence.NOT_EXISTS;
+                }
+
+                if (normalized.startsWith("{")) {
+                    JSONObject json = new JSONObject(normalized);
+                    if (json.has("email_exists")) {
+                        return json.optBoolean("email_exists") ? UserExistence.EXISTS : UserExistence.NOT_EXISTS;
+                    }
+                    if (json.has("exists")) {
+                        return json.optBoolean("exists") ? UserExistence.EXISTS : UserExistence.NOT_EXISTS;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "RPC email_exists unavailable, fallback to user_profiles query: " + e.getMessage());
+        }
+
+        return UserExistence.UNKNOWN;
     }
 
     /**
@@ -236,7 +360,10 @@ public class SupabaseClient {
         try (Response response = client.newCall(request).execute()) {
             String responseBody = response.body() != null ? response.body().string() : "";
             Log.d(TAG, "Update password response: " + response.code() + " - " + responseBody);
-            return response.isSuccessful();
+            if (response.isSuccessful()) {
+                return true;
+            }
+            throw new Exception(parseError(responseBody));
         }
     }
     
@@ -321,25 +448,58 @@ public class SupabaseClient {
         try {
             JSONObject json = new JSONObject(responseBody);
             if (json.has("error_description")) {
-                return json.getString("error_description");
+                return localizeAuthError(json.getString("error_description"));
             }
             if (json.has("msg")) {
-                return json.getString("msg");
+                return localizeAuthError(json.getString("msg"));
             }
             if (json.has("error")) {
                 if (json.get("error") instanceof String) {
-                    return json.getString("error");
+                    return localizeAuthError(json.getString("error"));
                 }
                 JSONObject error = json.getJSONObject("error");
-                return error.optString("message", "未知错误");
+                return localizeAuthError(error.optString("message", "未知错误"));
             }
             if (json.has("message")) {
-                return json.getString("message");
+                return localizeAuthError(json.getString("message"));
             }
             return "请求失败";
         } catch (Exception e) {
-            return "请求失败: " + responseBody;
+            return localizeAuthError(responseBody);
         }
+    }
+
+    private String localizeAuthError(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return "请求失败，请稍后重试";
+        }
+
+        String msg = raw.trim();
+        String lower = msg.toLowerCase();
+
+        if (lower.contains("invalid login credentials")) {
+            return "邮箱或密码错误";
+        }
+        if (lower.contains("email not confirmed")) {
+            return "邮箱尚未验证，请先查收验证邮件";
+        }
+        if (lower.contains("new password should be different")
+                || lower.contains("same as the old password")
+                || lower.contains("same password")
+                || lower.contains("password should be different")) {
+            return "新密码不能与旧密码相同";
+        }
+        if (lower.contains("password should be at least") || lower.contains("password is too short")) {
+            return "密码至少6位";
+        }
+        if (lower.contains("jwt expired") || lower.contains("token has expired") || lower.contains("refresh token not found")) {
+            return "重置凭证已失效，请重新发送重置邮件";
+        }
+        if (lower.contains("user not found")) {
+            return "该用户不存在";
+        }
+
+        return msg;
     }
     
     /**
