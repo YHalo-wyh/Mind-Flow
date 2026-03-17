@@ -18,11 +18,13 @@
 ## Supabase 推荐配置
 
 Authentication -> URL Configuration:
-- Site URL: 回调页地址，例如 `https://<username>.github.io/<repo>/`
+- Site URL: 你的回调页地址（不要填博客主页），例如 `https://<username>.github.io/<repo>/`
 - Redirect URLs:
   - `https://<username>.github.io/<repo>/`
-  - `mindflow://auth-callback`
+  - `mindflow://auth-callback/reset-password`
 
 ## 说明
 - 回调页会解析 URL hash 并尝试跳回 `mindflow://auth-callback`。
 - 如果没有安装或未注册 deep link，页面会停留并显示参数内容。
+
+如果重置邮件仍跳到博客域名，说明 Supabase 的 Site URL 或邮件模板仍在使用该域名。

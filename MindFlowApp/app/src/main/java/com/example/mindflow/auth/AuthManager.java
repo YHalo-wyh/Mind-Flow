@@ -174,7 +174,12 @@ public class AuthManager {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Update password error", e);
-                notifyFailure(callback, "网络错误: " + e.getMessage());
+                String msg = e.getMessage() == null ? "密码更新失败，请重试" : e.getMessage();
+                if (msg.toLowerCase().contains("unable to resolve host")) {
+                    notifyFailure(callback, "网络不可用或服务地址不可达，请检查网络后重试");
+                } else {
+                    notifyFailure(callback, msg);
+                }
             }
         });
     }

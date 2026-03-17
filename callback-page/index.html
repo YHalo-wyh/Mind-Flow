@@ -112,6 +112,7 @@
     </section>
 
     <div class="row">
+      <button id="openAppBtn" class="ghost hidden" type="button">打开 MindFlow App</button>
       <button id="copyBtn" class="ghost" type="button">复制回调参数</button>
     </div>
     <code id="payload"></code>
@@ -121,6 +122,7 @@
     const statusEl = document.getElementById("status");
     const payloadEl = document.getElementById("payload");
     const copyBtn = document.getElementById("copyBtn");
+    const openAppBtn = document.getElementById("openAppBtn");
 
     const resetSection = document.getElementById("resetSection");
     const expiredSection = document.getElementById("expiredSection");
@@ -187,6 +189,30 @@
       }
     }
 
+    function translateAuthError(raw) {
+      const msg = String(raw || "").trim();
+      if (!msg) return "请求失败，请稍后重试";
+      const lower = msg.toLowerCase();
+
+      if (lower.includes("invalid login credentials")) return "邮箱或密码错误";
+      if (lower.includes("email not confirmed")) return "邮箱尚未验证，请先查收验证邮件";
+      if (lower.includes("new password should be different")
+        || lower.includes("same as the old password")
+        || lower.includes("same password")
+        || lower.includes("password should be different")) {
+        return "新密码不能与旧密码相同";
+      }
+      if (lower.includes("password should be at least") || lower.includes("password is too short")) {
+        return "密码至少6位";
+      }
+      if (lower.includes("jwt expired") || lower.includes("token has expired") || lower.includes("refresh token not found")) {
+        return "重设凭证已失效，请重新发送重置邮件。";
+      }
+      if (lower.includes("user not found")) return "该用户不存在";
+
+      return msg;
+    }
+
     function decodeJwtPayload(token) {
       try {
         if (!token || token.split(".").length < 2) return {};
@@ -239,6 +265,33 @@
       resendCooldownTimer = setInterval(tickCooldown, 1000);
     }
 
+    function buildRecoveryAppLink() {
+      const merged = new URLSearchParams();
+      queryParams.forEach((value, key) => merged.set(key, value));
+      hashParams.forEach((value, key) => merged.set(key, value));
+      const mergedText = merged.toString();
+      return RECOVERY_REDIRECT_TO + (mergedText ? ("#" + mergedText) : "");
+    }
+
+    function tryOpenRecoveryInApp() {
+      if (!(type === "recovery" && accessToken)) {
+        return false;
+      }
+
+      const appLink = buildRecoveryAppLink();
+      openAppBtn.classList.remove("hidden");
+      openAppBtn.onclick = () => {
+        window.location.href = appLink;
+      };
+
+      statusEl.className = "ok";
+      statusEl.textContent = "检测到重置令牌，正在尝试唤起 MindFlow App...";
+      setTimeout(() => {
+        window.location.href = appLink;
+      }, 120);
+      return true;
+    }
+
     async function updatePasswordAndSync(newPassword) {
       if (!ensureConfig()) return;
       if (!accessToken) {
@@ -262,7 +315,7 @@
       if (!resetResp.ok) {
         const resetErr = parseJsonSafe(resetText);
         const resetCode = String(resetErr.error_code || resetErr.code || "").toLowerCase();
-        const resetMsg = String(resetErr.msg || resetErr.error_description || resetText || "");
+        const resetMsg = translateAuthError(resetErr.msg || resetErr.error_description || resetText || "");
         if (resetResp.status === 401 || resetResp.status === 403 || resetCode.includes("expired") || resetCode.includes("invalid") || resetCode.includes("access_denied")) {
           statusEl.className = "err";
           statusEl.textContent = "重设凭证已失效，请重新发送重置邮件。";
@@ -355,7 +408,7 @@
           return;
         }
         statusEl.className = "err";
-        statusEl.textContent = "发送失败：" + text;
+        statusEl.textContent = "发送失败：" + translateAuthError(text);
         return;
       }
 
@@ -363,10 +416,12 @@
       statusEl.textContent = "重置邮件已重新发送，请查收最新邮件链接。";
     }
 
-    if (error || errorCode) {
+    if (tryOpenRecoveryInApp()) {
+      resetSection.classList.remove("hidden");
+    } else if (error || errorCode) {
       statusEl.className = "err";
       const displayCode = (errorCode || error || "unknown").toLowerCase();
-      const suffix = errorDesc || msg;
+      const suffix = translateAuthError(errorDesc || msg);
       statusEl.textContent = "回调失败：" + displayCode + (suffix ? " (" + suffix + ")" : "");
       if (displayCode === "otp_expired" || displayCode === "over_email_send_rate_limit") {
         expiredSection.classList.remove("hidden");

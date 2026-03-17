@@ -345,7 +345,10 @@ public class SupabaseClient {
         try (Response response = client.newCall(request).execute()) {
             String responseBody = response.body() != null ? response.body().string() : "";
             Log.d(TAG, "Update password response: " + response.code() + " - " + responseBody);
-            return response.isSuccessful();
+            if (response.isSuccessful()) {
+                return true;
+            }
+            throw new Exception(parseError(responseBody));
         }
     }
     
@@ -430,25 +433,58 @@ public class SupabaseClient {
         try {
             JSONObject json = new JSONObject(responseBody);
             if (json.has("error_description")) {
-                return json.getString("error_description");
+                return localizeAuthError(json.getString("error_description"));
             }
             if (json.has("msg")) {
-                return json.getString("msg");
+                return localizeAuthError(json.getString("msg"));
             }
             if (json.has("error")) {
                 if (json.get("error") instanceof String) {
-                    return json.getString("error");
+                    return localizeAuthError(json.getString("error"));
                 }
                 JSONObject error = json.getJSONObject("error");
-                return error.optString("message", "未知错误");
+                return localizeAuthError(error.optString("message", "未知错误"));
             }
             if (json.has("message")) {
-                return json.getString("message");
+                return localizeAuthError(json.getString("message"));
             }
             return "请求失败";
         } catch (Exception e) {
-            return "请求失败: " + responseBody;
+            return localizeAuthError(responseBody);
         }
+    }
+
+    private String localizeAuthError(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return "请求失败，请稍后重试";
+        }
+
+        String msg = raw.trim();
+        String lower = msg.toLowerCase();
+
+        if (lower.contains("invalid login credentials")) {
+            return "邮箱或密码错误";
+        }
+        if (lower.contains("email not confirmed")) {
+            return "邮箱尚未验证，请先查收验证邮件";
+        }
+        if (lower.contains("new password should be different")
+                || lower.contains("same as the old password")
+                || lower.contains("same password")
+                || lower.contains("password should be different")) {
+            return "新密码不能与旧密码相同";
+        }
+        if (lower.contains("password should be at least") || lower.contains("password is too short")) {
+            return "密码至少6位";
+        }
+        if (lower.contains("jwt expired") || lower.contains("token has expired") || lower.contains("refresh token not found")) {
+            return "重置凭证已失效，请重新发送重置邮件";
+        }
+        if (lower.contains("user not found")) {
+            return "该用户不存在";
+        }
+
+        return msg;
     }
     
     /**
