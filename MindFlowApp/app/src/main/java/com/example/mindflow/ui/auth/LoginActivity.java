@@ -3,6 +3,8 @@ package com.example.mindflow.ui.auth;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
 import android.text.TextUtils;
@@ -39,6 +41,17 @@ public class LoginActivity extends AppCompatActivity {
     private boolean forceLoginMode = false;
     private boolean inRecoveryFlow = false;
     private String recoveryAccessToken = "";
+    private long forgotCooldownUntilMs = 0L;
+    private final Handler forgotCooldownHandler = new Handler(Looper.getMainLooper());
+    private final Runnable forgotCooldownTicker = new Runnable() {
+        @Override
+        public void run() {
+            updateForgotPasswordUi();
+            if (System.currentTimeMillis() < forgotCooldownUntilMs) {
+                forgotCooldownHandler.postDelayed(this, 1000);
+            }
+        }
+    };
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +70,7 @@ public class LoginActivity extends AppCompatActivity {
         setupClickListeners();
         setupPasswordVisibilityToggles();
         updateForceLoginUi();
+        updateForgotPasswordUi();
     }
 
     private void setupPasswordVisibilityToggles() {
@@ -272,6 +286,7 @@ public class LoginActivity extends AppCompatActivity {
             binding.confirmPasswordLayout.setVisibility(View.GONE);
             binding.btnSubmit.setText("登录");
             binding.tvForgotPassword.setVisibility(View.VISIBLE);
+            updateForgotPasswordUi();
         }
     }
     
@@ -403,6 +418,14 @@ public class LoginActivity extends AppCompatActivity {
     }
     
     private void handleForgotPassword() {
+        long now = System.currentTimeMillis();
+        if (now < forgotCooldownUntilMs) {
+            long left = Math.max(1L, (forgotCooldownUntilMs - now + 999L) / 1000L);
+            Toast.makeText(this, "发送过于频繁，请在 " + left + " 秒后重试", Toast.LENGTH_SHORT).show();
+            updateForgotPasswordUi();
+            return;
+        }
+
         String email = binding.etEmail.getText().toString().trim();
         
         if (TextUtils.isEmpty(email)) {
@@ -416,7 +439,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onSuccess(String userId, String email, String username) {
                 runOnUiThread(() -> {
                     setLoading(false);
-                    Toast.makeText(LoginActivity.this, "重置邮件请求已提交(v0317)", Toast.LENGTH_LONG).show();
+                    Toast.makeText(LoginActivity.this, "重置邮件请求已提交", Toast.LENGTH_LONG).show();
                 });
             }
             
@@ -424,10 +447,53 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(String error) {
                 runOnUiThread(() -> {
                     setLoading(false);
-                    Toast.makeText(LoginActivity.this, "重置失败(v0317): " + error, Toast.LENGTH_LONG).show();
+                    int retrySec = extractRetrySeconds(error);
+                    if (retrySec > 0) {
+                        startForgotCooldown(retrySec);
+                    }
+                    Toast.makeText(LoginActivity.this, "重置失败: " + error, Toast.LENGTH_LONG).show();
                 });
             }
         });
+    }
+
+    private int extractRetrySeconds(String text) {
+        if (TextUtils.isEmpty(text)) {
+            return -1;
+        }
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("(\\d+)\\s*(秒|seconds?)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(text);
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(1));
+            } catch (Exception ignored) {
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    private void startForgotCooldown(int seconds) {
+        int safeSeconds = Math.max(1, seconds);
+        forgotCooldownUntilMs = System.currentTimeMillis() + safeSeconds * 1000L;
+        forgotCooldownHandler.removeCallbacks(forgotCooldownTicker);
+        forgotCooldownHandler.post(forgotCooldownTicker);
+    }
+
+    private void updateForgotPasswordUi() {
+        if (binding == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now < forgotCooldownUntilMs) {
+            long left = Math.max(1L, (forgotCooldownUntilMs - now + 999L) / 1000L);
+            binding.tvForgotPassword.setEnabled(false);
+            binding.tvForgotPassword.setText("忘记密码？（" + left + "s）");
+        } else {
+            binding.tvForgotPassword.setEnabled(true);
+            binding.tvForgotPassword.setText("忘记密码？");
+        }
     }
     
     private void setLoading(boolean loading) {
@@ -454,6 +520,7 @@ public class LoginActivity extends AppCompatActivity {
     
     @Override
     protected void onDestroy() {
+        forgotCooldownHandler.removeCallbacks(forgotCooldownTicker);
         super.onDestroy();
         binding = null;
     }

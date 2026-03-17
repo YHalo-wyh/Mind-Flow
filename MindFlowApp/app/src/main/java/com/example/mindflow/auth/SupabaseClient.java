@@ -220,8 +220,45 @@ public class SupabaseClient {
                 .build();
         
         try (Response response = client.newCall(request).execute()) {
-            return response.isSuccessful();
+            if (response.isSuccessful()) {
+                return true;
+            }
+
+            String responseBody = response.body() != null ? response.body().string() : "";
+            String errorMessage = parseError(responseBody);
+            int retrySeconds = parseRetryAfterSeconds(response, responseBody);
+
+            if (response.code() == 429) {
+                throw new IOException("发送过于频繁，请在 " + retrySeconds + " 秒后重试");
+            }
+
+            throw new IOException(errorMessage.isEmpty() ? "重置请求失败，请稍后重试" : errorMessage);
         }
+    }
+
+    private int parseRetryAfterSeconds(Response response, String responseBody) {
+        String retryAfter = response.header("retry-after");
+        if (retryAfter != null) {
+            try {
+                int sec = Integer.parseInt(retryAfter.trim());
+                if (sec > 0) return sec;
+            } catch (Exception ignored) {
+                // Fallback to response body parsing.
+            }
+        }
+
+        String raw = responseBody == null ? "" : responseBody;
+        String digits = raw.replaceAll(".*?(\\d+)\\s*(seconds?|秒).*", "$1");
+        if (!digits.equals(raw)) {
+            try {
+                int sec = Integer.parseInt(digits);
+                if (sec > 0) return sec;
+            } catch (Exception ignored) {
+                // Use default.
+            }
+        }
+
+        return 35;
     }
 
     private String buildRecoveryRedirectWithTrace(String baseRedirect, String source) {

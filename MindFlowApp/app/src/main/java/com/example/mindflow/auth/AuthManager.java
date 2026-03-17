@@ -151,10 +151,13 @@ public class AuthManager {
             } catch (Exception e) {
                 Log.e(TAG, "Reset password error", e);
                 String msg = e.getMessage() == null ? "" : e.getMessage();
-                if (msg.toLowerCase().contains("unable to resolve host")) {
+                String lower = msg.toLowerCase();
+                if (lower.contains("unable to resolve host")) {
                     notifyFailure(callback, "网络不可用或服务地址不可达，请检查网络后重试");
+                } else if (lower.contains("发送过于频繁") || lower.contains("too many") || lower.contains("rate")) {
+                    notifyFailure(callback, msg);
                 } else {
-                    notifyFailure(callback, "网络错误: " + msg);
+                    notifyFailure(callback, msg.isEmpty() ? "重置请求失败，请稍后重试" : msg);
                 }
             }
         });
