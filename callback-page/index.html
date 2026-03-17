@@ -196,29 +196,6 @@
     }
 
 
-    function buildRecoveryAppLink() {
-      const merged = new URLSearchParams();
-      queryParams.forEach((value, key) => merged.set(key, value));
-      hashParams.forEach((value, key) => merged.set(key, value));
-      const mergedText = merged.toString();
-      return APP_RECOVERY_REDIRECT_TO + (mergedText ? ("#" + mergedText) : "");
-    }
-
-    function tryOpenRecoveryInApp() {
-      if (!(type === "recovery" && accessToken)) {
-        return false;
-      }
-
-      const appLink = buildRecoveryAppLink();
-
-      statusEl.className = "ok";
-      statusEl.textContent = "检测到重置令牌，正在尝试唤起 MindFlow App...";
-      setTimeout(() => {
-        window.location.href = appLink;
-      }, 120);
-      return true;
-    }
-
     async function updatePasswordAndSync(newPassword) {
       if (!ensureConfig()) return;
       if (!accessToken) {
@@ -306,9 +283,7 @@
       resetSection.classList.add("hidden");
     }
 
-    if (tryOpenRecoveryInApp()) {
-      resetSection.classList.remove("hidden");
-    } else if (error || errorCode) {
+    if (error || errorCode) {
       statusEl.className = "err";
       const displayCode = (errorCode || error || "unknown").toLowerCase();
       const suffix = translateAuthError(errorDesc || msg);
