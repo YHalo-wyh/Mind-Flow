@@ -27,6 +27,7 @@ public class SupabaseClient {
     private static final String TAG = "SupabaseClient";
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final String RECOVERY_REDIRECT_TO = "mindflow://auth-callback/reset-password";
+    private static final String RECOVERY_TRACE_SOURCE = "android_app";
     
     private final String supabaseUrl;
     private final String supabaseKey;
@@ -207,7 +208,9 @@ public class SupabaseClient {
 
         JSONObject body = new JSONObject();
         body.put("email", email);
-        body.put("redirect_to", RECOVERY_REDIRECT_TO);
+        String redirectWithTrace = buildRecoveryRedirectWithTrace(RECOVERY_REDIRECT_TO, RECOVERY_TRACE_SOURCE);
+        body.put("redirect_to", redirectWithTrace);
+        Log.d(TAG, "resetPassword redirect_to=" + redirectWithTrace);
         
         Request request = new Request.Builder()
                 .url(supabaseUrl + "/auth/v1/recover")
@@ -219,6 +222,18 @@ public class SupabaseClient {
         try (Response response = client.newCall(request).execute()) {
             return response.isSuccessful();
         }
+    }
+
+    private String buildRecoveryRedirectWithTrace(String baseRedirect, String source) {
+        String safeBase = (baseRedirect == null) ? "" : baseRedirect.trim();
+        if (safeBase.isEmpty()) {
+            return safeBase;
+        }
+
+        String separator = safeBase.contains("?") ? "&" : "?";
+        String ts = String.valueOf(System.currentTimeMillis());
+        String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
+        return safeBase + separator + "mf_src=" + encodedSource + "&mf_ts=" + ts;
     }
 
     public enum UserExistence {

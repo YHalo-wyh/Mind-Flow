@@ -101,16 +101,6 @@
       </div>
     </section>
 
-    <section id="expiredSection" class="hidden">
-      <p>重置链接已失效，可在这里重新发送重置邮件。</p>
-      <div class="stack">
-        <input id="emailInput" type="email" placeholder="输入你的邮箱" />
-      </div>
-      <div class="row">
-        <button id="resendBtn" type="button">重新发送重置邮件</button>
-      </div>
-    </section>
-
     <div class="row">
       <button id="copyBtn" class="ghost" type="button">复制回调参数</button>
     </div>
@@ -123,12 +113,9 @@
     const copyBtn = document.getElementById("copyBtn");
 
     const resetSection = document.getElementById("resetSection");
-    const expiredSection = document.getElementById("expiredSection");
     const submitResetBtn = document.getElementById("submitResetBtn");
-    const resendBtn = document.getElementById("resendBtn");
     const newPwdEl = document.getElementById("newPwd");
     const confirmPwdEl = document.getElementById("confirmPwd");
-    const emailInputEl = document.getElementById("emailInput");
 
     const rawHash = window.location.hash || "";
     const hash = rawHash.startsWith("#") ? rawHash.slice(1) : rawHash;
@@ -149,9 +136,6 @@
     const sbParam = param("sb");
     const emailParam = param("email") || queryParams.get("email") || "";
 
-    let resendCooldownUntil = 0;
-    let resendCooldownTimer = null;
-
     payloadEl.textContent = [query, hash].filter(Boolean).join("\n# ") || "(空)";
 
     function resolveSupabaseUrl() {
@@ -169,7 +153,6 @@
     const SUPABASE_URL = resolveSupabaseUrl() || "https://hbycbtlboclqhkqznsea.supabase.co";
     const SUPABASE_ANON_KEY = window.MF_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhieWNidGxib2NscWhrcXpuc2VhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTMwNzQsImV4cCI6MjA4OTIyOTA3NH0.OBTy__XH3tlc9xgL5mzYRDdwjYkXqIl-WTzqaNnFEyA";
     const APP_RECOVERY_REDIRECT_TO = "mindflow://auth-callback/reset-password";
-    const WEB_RECOVERY_REDIRECT_TO = window.location.origin + "/Mind-Flow/";
 
     function ensureConfig() {
       if (!SUPABASE_ANON_KEY) {
@@ -212,57 +195,6 @@
       return msg;
     }
 
-    function decodeJwtPayload(token) {
-      try {
-        if (!token || token.split(".").length < 2) return {};
-        const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-        const pad = payload.length % 4 === 0 ? "" : "=".repeat(4 - (payload.length % 4));
-        return JSON.parse(atob(payload + pad));
-      } catch (_) {
-        return {};
-      }
-    }
-
-    function parseRetrySeconds(resp, responseText) {
-      const retryAfter = resp && resp.headers ? resp.headers.get("retry-after") : null;
-      if (retryAfter && /^\d+$/.test(retryAfter.trim())) {
-        return Number(retryAfter.trim());
-      }
-
-      const text = (responseText || "") + " " + msg;
-      const en = text.match(/after\s+(\d+)\s+seconds?/i);
-      if (en) return Number(en[1]);
-      const zh = text.match(/(\d+)\s*秒/);
-      if (zh) return Number(zh[1]);
-      return 35;
-    }
-
-    function setResendCooldown(seconds) {
-      const sec = Math.max(1, Number(seconds) || 35);
-      resendCooldownUntil = Date.now() + sec * 1000;
-
-      if (resendCooldownTimer) {
-        clearInterval(resendCooldownTimer);
-      }
-
-      function tickCooldown() {
-        const left = Math.ceil((resendCooldownUntil - Date.now()) / 1000);
-        if (left <= 0) {
-          resendBtn.disabled = false;
-          resendBtn.textContent = "重新发送重置邮件";
-          if (resendCooldownTimer) {
-            clearInterval(resendCooldownTimer);
-            resendCooldownTimer = null;
-          }
-          return;
-        }
-        resendBtn.disabled = true;
-        resendBtn.textContent = "请等待 " + left + " 秒";
-      }
-
-      tickCooldown();
-      resendCooldownTimer = setInterval(tickCooldown, 1000);
-    }
 
     function buildRecoveryAppLink() {
       const merged = new URLSearchParams();
@@ -313,9 +245,8 @@
         const resetMsg = translateAuthError(resetErr.msg || resetErr.error_description || resetText || "");
         if (resetResp.status === 401 || resetResp.status === 403 || resetCode.includes("expired") || resetCode.includes("invalid") || resetCode.includes("access_denied")) {
           statusEl.className = "err";
-          statusEl.textContent = "重设凭证已失效，请重新发送重置邮件。";
+          statusEl.textContent = "链接已超时，请回到 MindFlow App 重新发送重置请求。";
           resetSection.classList.add("hidden");
-          expiredSection.classList.remove("hidden");
           return;
         }
         statusEl.className = "err";
@@ -375,54 +306,16 @@
       resetSection.classList.add("hidden");
     }
 
-    async function resendRecoveryEmail(email) {
-      if (!ensureConfig()) return;
-      if (!email) {
-        statusEl.className = "err";
-        statusEl.textContent = "请先输入邮箱。";
-        return;
-      }
-
-      statusEl.textContent = "正在发送重置邮件...";
-      const resp = await fetch(SUPABASE_URL + "/auth/v1/recover", {
-        method: "POST",
-        headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email, redirect_to: WEB_RECOVERY_REDIRECT_TO })
-      });
-
-      const text = await resp.text();
-      if (!resp.ok) {
-        if (resp.status === 429) {
-          const retrySec = parseRetrySeconds(resp, text);
-          setResendCooldown(retrySec);
-          statusEl.className = "err";
-          statusEl.textContent = "发送过于频繁，请在 " + retrySec + " 秒后重试。";
-          return;
-        }
-        statusEl.className = "err";
-        statusEl.textContent = "发送失败：" + translateAuthError(text);
-        return;
-      }
-
-      statusEl.className = "ok";
-      statusEl.textContent = "重置邮件已重新发送，请查收最新邮件链接。";
-    }
-
     if (tryOpenRecoveryInApp()) {
       resetSection.classList.remove("hidden");
     } else if (error || errorCode) {
       statusEl.className = "err";
       const displayCode = (errorCode || error || "unknown").toLowerCase();
       const suffix = translateAuthError(errorDesc || msg);
-      statusEl.textContent = "回调失败：" + displayCode + (suffix ? " (" + suffix + ")" : "");
       if (displayCode === "otp_expired" || displayCode === "over_email_send_rate_limit") {
-        expiredSection.classList.remove("hidden");
-        if (displayCode === "over_email_send_rate_limit") {
-          setResendCooldown(parseRetrySeconds(null, ""));
-        }
+        statusEl.textContent = "链接已超时，请回到 MindFlow App 重新发送重置请求。";
+      } else {
+        statusEl.textContent = "回调失败：" + displayCode + (suffix ? " (" + suffix + ")" : "");
       }
     } else if (type === "recovery" && accessToken) {
       statusEl.className = "ok";
@@ -454,35 +347,9 @@
       }
     });
 
-    resendBtn.addEventListener("click", async () => {
-      if (Date.now() < resendCooldownUntil) {
-        return;
-      }
-      resendBtn.disabled = true;
-      try {
-        const email = (emailInputEl.value || "").trim();
-        if (email) {
-          try {
-            localStorage.setItem("mf_recovery_email", email);
-          } catch (_) {}
-        }
-        await resendRecoveryEmail(email);
-      } finally {
-        if (Date.now() >= resendCooldownUntil) {
-          resendBtn.disabled = false;
-        }
-      }
-    });
-
-    (function initEmailInput() {
-      let saved = "";
-      try {
-        saved = localStorage.getItem("mf_recovery_email") || "";
-      } catch (_) {}
-      const jwtPayload = decodeJwtPayload(accessToken);
-      const jwtEmail = typeof jwtPayload.email === "string" ? jwtPayload.email : "";
-      emailInputEl.value = emailParam || jwtEmail || saved;
-    })();
+    if (emailParam) {
+      // 保留参数读取，避免外部链接兼容性被破坏。
+    }
 
     copyBtn.addEventListener("click", async () => {
       try {
