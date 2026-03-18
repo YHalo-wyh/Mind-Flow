@@ -159,6 +159,9 @@ public class AuthManager {
                 } else {
                     notifyFailure(callback, msg.isEmpty() ? "重置请求失败，请稍后重试" : msg);
                 }
+            } catch (Throwable t) {
+                Log.e(TAG, "Reset password fatal error", t);
+                notifyFailure(callback, "重置请求失败，请更新应用后重试");
             }
         });
     }
@@ -183,6 +186,9 @@ public class AuthManager {
                 } else {
                     notifyFailure(callback, msg);
                 }
+            } catch (Throwable t) {
+                Log.e(TAG, "Update password fatal error", t);
+                notifyFailure(callback, "密码更新失败，请更新应用后重试");
             }
         });
     }

@@ -43,4 +43,7 @@ public interface FocusSessionDao {
 
     @Query("SELECT COUNT(*) FROM focus_sessions WHERE startTs >= :startTime")
     int getSessionCountSince(long startTime);
+    
+    @Query("SELECT * FROM focus_sessions WHERE startTs >= :startTime ORDER BY startTs DESC")
+    List<FocusSession> getSessionsAfterTime(long startTime);
 }

@@ -14,11 +14,14 @@
     <color name="background_primary">#1A1A2E</color>
     <color name="background_secondary">#16213E</color>
     <color name="card_background">#232A4A</color>
+    <color name="primary_background">#1A1A2E</color>
     
     <!-- Text Colors -->
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#CCFFFFFF</color>
     <color name="text_hint">#99FFFFFF</color>
+    <color name="primary_text">#FFFFFF</color>
+    <color name="secondary_text">#CCFFFFFF</color>
     
     <!-- Status Colors -->
     <color name="success">#22C55E</color>

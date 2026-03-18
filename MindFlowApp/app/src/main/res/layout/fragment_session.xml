@@ -326,11 +326,13 @@
                     android:maxLines="14" />
 
                 <LinearLayout
+                    android:id="@+id/layoutAiFeedbackActions"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:gravity="end"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnAiCorrect"
@@ -355,7 +357,8 @@
                     android:layout_height="wrap_content"
                     android:text="AI 反馈样本：0 条"
                     android:textColor="@color/text_hint"
-                    android:textSize="11sp" />
+                    android:textSize="11sp"
+                    android:visibility="gone" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -399,6 +402,7 @@
 
         <!-- 调试测试卡片 -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/cardDebugTools"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
@@ -406,7 +410,8 @@
             android:layout_marginBottom="24dp"
             app:cardBackgroundColor="@color/card_background"
             app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            app:cardElevation="2dp"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"

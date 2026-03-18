@@ -10,6 +10,16 @@ val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
 }
+val parentLocalPropertiesFile = rootProject.file("../local.properties")
+if (parentLocalPropertiesFile.exists()) {
+    val parentProperties = Properties()
+    parentProperties.load(FileInputStream(parentLocalPropertiesFile))
+    parentProperties.forEach { key, value ->
+        if (localProperties.getProperty(key.toString()).isNullOrBlank()) {
+            localProperties.setProperty(key.toString(), value.toString())
+        }
+    }
+}
 val aiApiKey = (localProperties.getProperty("AI_API_KEY")
     ?: localProperties.getProperty("GLM_API_KEY")
     ?: "").trim()
@@ -33,6 +43,12 @@ val aiVisionModelEscaped = aiVisionModel
     .replace("\\", "\\\\")
     .replace("\"", "\\\"")
 
+// Supabase Configuration
+val supabaseUrl = (localProperties.getProperty("SUPABASE_URL") ?: "").trim()
+val supabaseAnonKey = (localProperties.getProperty("SUPABASE_ANON_KEY") ?: "").trim()
+val supabaseUrlEscaped = supabaseUrl.replace("\\", "\\\\").replace("\"", "\\\"")
+val supabaseAnonKeyEscaped = supabaseAnonKey.replace("\\", "\\\\").replace("\"", "\\\"")
+
 android {
     namespace = "com.example.mindflow"
     compileSdk = 36
@@ -48,6 +64,10 @@ android {
         buildConfigField("String", "AI_BASE_URL", "\"$aiApiBaseUrlEscaped\"")
         buildConfigField("String", "AI_TEXT_MODEL", "\"$aiTextModelEscaped\"")
         buildConfigField("String", "AI_VISION_MODEL", "\"$aiVisionModelEscaped\"")
+
+        // Supabase
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrlEscaped\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKeyEscaped\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -127,4 +147,7 @@ dependencies {
 
     // UI Charts
     implementation(libs.mpandroidchart)
+
+    // Supabase 认证 - 通过 OkHttp 直接调用 REST API（项目已有 OkHttp 依赖）
+// 无需额外 SDK，SupabaseClient.java 使用 OkHttp 实现
 }

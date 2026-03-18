@@ -127,6 +127,9 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void updateForceLoginUi() {
+        if (binding == null) {
+            return;
+        }
         if (forceLoginMode) {
             binding.tvLoginHint.setText("请先登录，登录后可同步云端数据");
             binding.btnOfflineMode.setVisibility(View.GONE);
@@ -235,7 +238,7 @@ public class LoginActivity extends AppCompatActivity {
             AuthManager.getInstance(this).resetPasswordWithToken(recoveryAccessToken, newPwd, new AuthCallback() {
                 @Override
                 public void onSuccess(String userId, String email, String username) {
-                    runOnUiThread(() -> {
+                    runOnUiIfActive(() -> {
                         setLoading(false);
                         inRecoveryFlow = false;
                         recoveryAccessToken = "";
@@ -246,7 +249,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 @Override
                 public void onFailure(String error) {
-                    runOnUiThread(() -> {
+                    runOnUiIfActive(() -> {
                         setLoading(false);
                         Toast.makeText(LoginActivity.this, "重设失败: " + error, Toast.LENGTH_LONG).show();
                     });
@@ -274,6 +277,9 @@ public class LoginActivity extends AppCompatActivity {
     }
     
     private void updateFormVisibility() {
+        if (binding == null) {
+            return;
+        }
         if (isRegisterMode) {
             // 注册模式：显示用户名和确认密码
             binding.usernameLayout.setVisibility(View.VISIBLE);
@@ -379,7 +385,7 @@ public class LoginActivity extends AppCompatActivity {
         AuthManager.getInstance(this).login(email, password, new AuthCallback() {
             @Override
             public void onSuccess(String userId, String email, String username) {
-                runOnUiThread(() -> {
+                runOnUiIfActive(() -> {
                     setLoading(false);
                     Toast.makeText(LoginActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
                     navigateToMain();
@@ -388,7 +394,7 @@ public class LoginActivity extends AppCompatActivity {
             
             @Override
             public void onFailure(String error) {
-                runOnUiThread(() -> {
+                runOnUiIfActive(() -> {
                     setLoading(false);
                     Toast.makeText(LoginActivity.this, "登录失败: " + error, Toast.LENGTH_LONG).show();
                 });
@@ -400,7 +406,7 @@ public class LoginActivity extends AppCompatActivity {
         AuthManager.getInstance(this).register(username, email, password, new AuthCallback() {
             @Override
             public void onSuccess(String userId, String email, String username) {
-                runOnUiThread(() -> {
+                runOnUiIfActive(() -> {
                     setLoading(false);
                     Toast.makeText(LoginActivity.this, "注册成功", Toast.LENGTH_SHORT).show();
                     navigateToMain();
@@ -409,7 +415,7 @@ public class LoginActivity extends AppCompatActivity {
             
             @Override
             public void onFailure(String error) {
-                runOnUiThread(() -> {
+                runOnUiIfActive(() -> {
                     setLoading(false);
                     Toast.makeText(LoginActivity.this, "注册失败: " + error, Toast.LENGTH_LONG).show();
                 });
@@ -432,12 +438,16 @@ public class LoginActivity extends AppCompatActivity {
             Toast.makeText(this, "请先输入邮箱地址", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            Toast.makeText(this, "请输入有效的邮箱地址", Toast.LENGTH_SHORT).show();
+            return;
+        }
         
         setLoading(true);
         AuthManager.getInstance(this).resetPassword(email, new AuthCallback() {
             @Override
             public void onSuccess(String userId, String email, String username) {
-                runOnUiThread(() -> {
+                runOnUiIfActive(() -> {
                     setLoading(false);
                     Toast.makeText(LoginActivity.this, "重置邮件请求已提交", Toast.LENGTH_LONG).show();
                 });
@@ -445,7 +455,7 @@ public class LoginActivity extends AppCompatActivity {
             
             @Override
             public void onFailure(String error) {
-                runOnUiThread(() -> {
+                runOnUiIfActive(() -> {
                     setLoading(false);
                     int retrySec = extractRetrySeconds(error);
                     if (retrySec > 0) {
@@ -497,6 +507,9 @@ public class LoginActivity extends AppCompatActivity {
     }
     
     private void setLoading(boolean loading) {
+        if (binding == null) {
+            return;
+        }
         binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
         binding.btnSubmit.setEnabled(!loading);
         binding.btnOfflineMode.setEnabled(!loading);
@@ -504,6 +517,25 @@ public class LoginActivity extends AppCompatActivity {
         binding.etPassword.setEnabled(!loading);
         binding.etUsername.setEnabled(!loading);
         binding.etConfirmPassword.setEnabled(!loading);
+        if (loading) {
+            binding.tvForgotPassword.setEnabled(false);
+        } else {
+            updateForgotPasswordUi();
+        }
+    }
+
+    private boolean isUiActive() {
+        return binding != null && !isFinishing() && !isDestroyed();
+    }
+
+    private void runOnUiIfActive(Runnable action) {
+        runOnUiThread(() -> {
+            if (!isUiActive()) {
+                Log.d(TAG, "Activity not active, skip UI update.");
+                return;
+            }
+            action.run();
+        });
     }
     
     private void navigateToMain() {
@@ -521,7 +553,7 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         forgotCooldownHandler.removeCallbacks(forgotCooldownTicker);
-        super.onDestroy();
         binding = null;
+        super.onDestroy();
     }
 }

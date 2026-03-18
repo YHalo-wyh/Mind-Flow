@@ -269,7 +269,14 @@ public class SupabaseClient {
 
         String separator = safeBase.contains("?") ? "&" : "?";
         String ts = String.valueOf(System.currentTimeMillis());
-        String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
+        String encodedSource;
+        try {
+            // Use String charset overload for wider Android runtime compatibility.
+            encodedSource = URLEncoder.encode(source == null ? "" : source, StandardCharsets.UTF_8.name());
+        } catch (Exception e) {
+            Log.w(TAG, "encode recovery source failed, fallback to raw source", e);
+            encodedSource = source == null ? "" : source;
+        }
         return safeBase + separator + "mf_src=" + encodedSource + "&mf_ts=" + ts;
     }
 

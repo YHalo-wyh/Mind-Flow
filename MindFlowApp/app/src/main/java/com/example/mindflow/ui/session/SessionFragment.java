@@ -31,6 +31,7 @@ import com.example.mindflow.network.GlmApiService;
 import com.example.mindflow.service.AppMonitorService;
 import com.example.mindflow.service.FocusService;
 import com.example.mindflow.utils.AiFeedbackStore;
+import com.example.mindflow.utils.FocusModePreferences;
 import com.example.mindflow.utils.ScreenCaptureDataHolder;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -51,6 +52,8 @@ public class SessionFragment extends Fragment {
     private TextView tvTimer, tvSessionStatus, tvFocusStatus, tvDistractionCount, tvCurrentApp, tvAiRawOutput, tvServiceStatus, tvTestResult, tvGoalStatus, tvWhitelistCount, tvAiFeedbackStatus;
     private TextInputEditText etGoal;
     private MaterialButton btnStart, btnTestApi, btnConfirmGoal, btnWhitelist, btnAddCurrentApp, btnAiCorrect, btnAiIncorrect;
+    private View layoutAiFeedbackActions;
+    private View cardDebugTools;
     private String confirmedGoal = "";
     private Chip chip15, chip25, chip45, chip60, chipCustom;
 
@@ -107,6 +110,8 @@ public class SessionFragment extends Fragment {
         tvGoalStatus = view.findViewById(R.id.tvGoalStatus);
         btnAiCorrect = view.findViewById(R.id.btnAiCorrect);
         btnAiIncorrect = view.findViewById(R.id.btnAiIncorrect);
+        layoutAiFeedbackActions = view.findViewById(R.id.layoutAiFeedbackActions);
+        cardDebugTools = view.findViewById(R.id.cardDebugTools);
 
         // 深度专注模式和AI检测默认开启，无需开关
 
@@ -164,7 +169,22 @@ public class SessionFragment extends Fragment {
         restoreGoal();
 
         updateUI();
+        applyDebugModeVisibility();
         refreshAiFeedbackUi();
+    }
+
+    private void applyDebugModeVisibility() {
+        boolean debugMode = FocusModePreferences.isAiDebugModeEnabled(requireContext());
+
+        if (layoutAiFeedbackActions != null) {
+            layoutAiFeedbackActions.setVisibility(debugMode ? View.VISIBLE : View.GONE);
+        }
+        if (tvAiFeedbackStatus != null) {
+            tvAiFeedbackStatus.setVisibility(debugMode ? View.VISIBLE : View.GONE);
+        }
+        if (cardDebugTools != null) {
+            cardDebugTools.setVisibility(debugMode ? View.VISIBLE : View.GONE);
+        }
     }
 
     /**
@@ -219,6 +239,9 @@ public class SessionFragment extends Fragment {
      */
     private void testApiConnection() {
         if (tvTestResult == null || btnTestApi == null) return;
+
+        // 停止专注后会取消AI请求，这里主动重置，确保调试时随时可测。
+        GlmApiService.resetCancelState();
 
         tvTestResult.setText("正在测试 API 连接...\n模型：" + GlmApiService.getTextModel());
         btnTestApi.setEnabled(false);
@@ -713,6 +736,13 @@ public class SessionFragment extends Fragment {
         if (getContext() == null) {
             return;
         }
+        boolean debugMode = FocusModePreferences.isAiDebugModeEnabled(requireContext());
+        if (!debugMode) {
+            if (btnAiCorrect != null) btnAiCorrect.setEnabled(false);
+            if (btnAiIncorrect != null) btnAiIncorrect.setEnabled(false);
+            return;
+        }
+
         boolean canSubmit = AiFeedbackStore.canSubmitFeedback(requireContext());
         int count = AiFeedbackStore.getFeedbackCount(requireContext());
 
@@ -914,6 +944,8 @@ public class SessionFragment extends Fragment {
     public void onResume() {
         super.onResume();
         updateWhitelistCount();
+        applyDebugModeVisibility();
+        refreshAiFeedbackUi();
 
         if (focusService != null && tvDistractionCount != null) {
             int warnCount = focusService.getWarningCount();

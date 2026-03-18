@@ -303,10 +303,7 @@ public class DistractionManager {
             return false;
         }
 
-        // 提醒冷却期内仍继续监控，仅抑制重复提醒，避免“判定到分心却不计数”。
-        if (now - lastWarningTime < warningCooldownMs && lastWarningTime > 0) {
-            Log.d(TAG, "提醒冷却期内，继续监控并计数");
-        }
+        // 监控与计分不受提醒节流影响。
 
         // 缓冲期内不进行监控（开始专注后/锁机结束后的6秒缓冲）
         AppMonitorService service = AppMonitorService.getInstance();
@@ -577,20 +574,18 @@ public class DistractionManager {
 
     private void executeWarning() {
         long now = System.currentTimeMillis();
-        final long warningCooldownMs = getWarningCooldownMs();
 
         switch (currentLevel) {
             case WARNING:
-                // 分心1-2次：震动通知提醒（有冷却时间）
-                if (now - lastWarningTime >= warningCooldownMs) {
-                    lastWarningTime = now;
-                    recordIntervention("warning");
-                    triggerHapticAlert(false);
-                    showWarningNotification();
-                }
+                // 分心1-2次：每次有效分心都强制震动+通知。
+                lastWarningTime = now;
+                recordIntervention("warning");
+                triggerHapticAlert(false);
+                showWarningNotification();
                 break;
             case LOCK:
                 // 分心3次：锁机
+                lastWarningTime = now;
                 recordIntervention("lock");
                 triggerHapticAlert(true);
                 showWarningNotification();
@@ -955,12 +950,12 @@ public class DistractionManager {
 
     private long getWarningCooldownMs() {
         double r = getSensitivityRatio();
-        return (long) Math.round(12000 - 11200 * r); // 宽松12s -> 严格0.8s
+        return (long) Math.round(12000 - 11600 * r); // 宽松12s -> 严格0.4s
     }
 
     private long getDistractionDebounceMs() {
         double r = getSensitivityRatio();
-        return (long) Math.round(18000 - 17500 * r); // 宽松18s -> 严格0.5s
+        return (long) Math.round(18000 - 17800 * r); // 宽松18s -> 严格0.2s
     }
 
     private DecisionStatus parseConclusion(String conclusion, String reason) {
@@ -993,15 +988,28 @@ public class DistractionManager {
     private int parseConfidence(JSONObject json) {
         Object confidenceObj = json.opt("confidence");
         if (confidenceObj instanceof Number) {
-            return clamp(((Number) confidenceObj).intValue(), 0, 100);
+            double value = ((Number) confidenceObj).doubleValue();
+            if (value > 0d && value <= 1d) {
+                return clamp((int) Math.round(value * 100d), 0, 100);
+            }
+            return clamp((int) Math.round(value), 0, 100);
         }
         if (confidenceObj != null) {
-            String digits = confidenceObj.toString().replaceAll("[^0-9]", "");
-            if (!digits.isEmpty()) {
-                try {
-                    return clamp(Integer.parseInt(digits), 0, 100);
-                } catch (Exception ignored) {
-                    // fall through
+            String raw = confidenceObj.toString().trim();
+            try {
+                double value = Double.parseDouble(raw.replace("%", ""));
+                if (value > 0d && value <= 1d) {
+                    return clamp((int) Math.round(value * 100d), 0, 100);
+                }
+                return clamp((int) Math.round(value), 0, 100);
+            } catch (Exception ignored) {
+                String digits = raw.replaceAll("[^0-9]", "");
+                if (!digits.isEmpty()) {
+                    try {
+                        return clamp(Integer.parseInt(digits), 0, 100);
+                    } catch (Exception ignored2) {
+                        // fall through
+                    }
                 }
             }
         }

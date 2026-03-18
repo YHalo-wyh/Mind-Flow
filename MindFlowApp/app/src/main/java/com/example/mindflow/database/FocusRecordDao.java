@@ -18,6 +18,9 @@ public interface FocusRecordDao {
     @Query("SELECT * FROM focus_records ORDER BY startTime DESC")
     LiveData<List<FocusRecord>> getAllRecords();
     
+    @Query("SELECT * FROM focus_records ORDER BY startTime DESC")
+    List<FocusRecord> getAllRecordsSync();
+    
     @Query("SELECT * FROM focus_records WHERE taskId = :taskId ORDER BY startTime DESC")
     List<FocusRecord> getRecordsByTask(long taskId);
     
